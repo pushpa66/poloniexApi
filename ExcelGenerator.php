@@ -1,0 +1,139 @@
+<?php
+require 'vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+if(!empty($_POST['coinSymbol'])){
+    $coin = $_POST['coinSymbol'];
+    $data = getData($coin);
+    writeToSpreadSheet($data, $coin);
+}
+
+/**
+ * @throws \PhpOffice\PhpSpreadsheet\Exception
+ * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+ */
+function writeToSpreadSheet($data , $coinSymbol){
+    $spreadsheet = new Spreadsheet();
+    $sheet1 = new Worksheet($spreadsheet, 'Sells');
+    $sheet2 = new Worksheet($spreadsheet, 'Buys');
+
+// Data writing
+
+    $spreadsheet->addSheet($sheet1,0);
+    $spreadsheet->addSheet($sheet2,1);
+
+    $sheets = array("Asks" => $spreadsheet->getSheet(0), "Bids" => $spreadsheet->getSheet(1));
+
+    $asks = $data["asks"];
+    $bids = $data["bids"];
+
+    $cellWidth = 16;
+
+    $sheets['Asks']->getColumnDimension('A')->setWidth($cellWidth - 2);
+    $sheets['Asks']->getColumnDimension('B')->setWidth($cellWidth - 2);
+    $sheets['Asks']->getColumnDimension('C')->setWidth($cellWidth);
+    $sheets['Asks']->getColumnDimension('D')->setWidth($cellWidth + 2);
+
+    $sheets['Bids']->getColumnDimension('A')->setWidth($cellWidth - 2);
+    $sheets['Bids']->getColumnDimension('B')->setWidth($cellWidth - 2);
+    $sheets['Bids']->getColumnDimension('C')->setWidth($cellWidth);
+    $sheets['Bids']->getColumnDimension('D')->setWidth($cellWidth + 2);
+
+    $sheets['Asks']->getCell("A1")->setValue($asks[0][0]);
+    $sheets['Asks']->getStyle("A1")->getAlignment()->setWrapText(true);
+    $sheets['Asks']->getCell("B1")->setValue($asks[0][1]);
+    $sheets['Asks']->getStyle("B1")->getAlignment()->setWrapText(true);
+    $sheets['Asks']->getCell("C1")->setValue($asks[0][0] * $asks[0][1]);
+    $sheets['Asks']->getStyle("C1")->getAlignment()->setWrapText(true);
+    $sheets['Asks']->getCell("D1")->setValue($asks[0][0] * $asks[0][1]);
+    $sheets['Asks']->getStyle("D1")->getAlignment()->setWrapText(true);
+
+    $sheets['Bids']->getCell("A1")->setValue($bids[0][0]);
+    $sheets['Bids']->getStyle("A1")->getAlignment()->setWrapText(true);
+    $sheets['Bids']->getCell("B1")->setValue($bids[0][1]);
+    $sheets['Bids']->getStyle("B1")->getAlignment()->setWrapText(true);
+    $sheets['Bids']->getCell("C1")->setValue($bids[0][0] * $bids[0][1]);
+    $sheets['Bids']->getStyle("C1")->getAlignment()->setWrapText(true);
+    $sheets['Bids']->getCell("D1")->setValue($bids[0][0] * $bids[0][1]);
+    $sheets['Bids']->getStyle("D1")->getAlignment()->setWrapText(true);
+
+    for($i = 2; $i < count($asks); $i++){
+        $sheets['Asks']->getCell("A".$i)->setValue($asks[$i - 1][0]);
+        $sheets['Asks']->getStyle("A".$i)->getAlignment()->setWrapText(true);
+        $sheets['Asks']->getCell("B".$i)->setValue($asks[$i - 1][1]);
+        $sheets['Asks']->getStyle("B".$i)->getAlignment()->setWrapText(true);
+        $sheets['Asks']->getCell("C".$i)->setValue($asks[$i - 1][0] * $asks[$i - 1][1]);
+        $sheets['Asks']->getStyle("C".$i)->getAlignment()->setWrapText(true);
+
+        $value = $sheets['Asks']->getCell("D".($i - 1))->getValue() + $asks[$i - 1][0] * $asks[$i - 1][1];
+        $sheets['Asks']->getCell("D".$i)->setValue($value);
+        $sheets['Asks']->getStyle("D".$i)->getAlignment()->setWrapText(true);
+    }
+
+    for($i = 2; $i < count($bids); $i++){
+        $sheets['Bids']->getCell("A".$i)->setValue($bids[$i - 1][0]);
+        $sheets['Bids']->getStyle("A".$i)->getAlignment()->setWrapText(true);
+        $sheets['Bids']->getCell("B".$i)->setValue($bids[$i - 1][1]);
+        $sheets['Bids']->getStyle("B".$i)->getAlignment()->setWrapText(true);
+        $sheets['Bids']->getCell("C".$i)->setValue($bids[$i - 1][0] * $bids[$i - 1][1]);
+        $sheets['Bids']->getStyle("C".$i)->getAlignment()->setWrapText(true);
+
+        $value = $sheets['Bids']->getCell("D".($i - 1))->getValue() + $bids[$i - 1][0] * $bids[$i - 1][1];
+        $sheets['Bids']->getCell("D".$i)->setValue($value);
+        $sheets['Bids']->getStyle("D".$i)->getAlignment()->setWrapText(true);
+    }
+
+
+    $sheetIndex = $spreadsheet->getIndex(
+        $spreadsheet->getSheetByName('Worksheet')
+    );
+    $spreadsheet->removeSheetByIndex($sheetIndex);
+    $writer = new Xlsx($spreadsheet);
+
+    $t=time();
+    $date = date("Y-m-d",$t);
+
+    $filename = "$coinSymbol $date";
+    header('Content-Disposition: attachment;filename="'. $filename .'.xls"'); /*-- $filename is  xsl filename ---*/
+    header('Cache-Control: max-age=0');
+
+    $writer->save('php://output');
+
+}
+
+function getData($coinSymbol)
+{
+
+    $results = array();
+    $curl = curl_init();
+
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => "https://poloniex.com/public?command=returnOrderBook&currencyPair=BTC_$coinSymbol&depth=5000",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "GET",
+        CURLOPT_HTTPHEADER => array(
+            "Cache-Control: no-cache",
+            "Postman-Token: db11ee92-e5be-43ae-b6b4-5c6319bf6570"
+        ),
+    ));
+
+    $response = curl_exec($curl);
+    $err = curl_error($curl);
+
+    curl_close($curl);
+
+    if ($err) {
+        echo "cURL Error #:" . $err;
+    } else {
+        $results = json_decode($response, true);
+    }
+
+    return $results;
+}
