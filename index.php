@@ -13,7 +13,15 @@
     <form class="form-inline" action="ExcelGenerator.php" method="post">
         <div class="form-group">
             <label for="coin">Coin :</label>
-            <input type="text" class="form-control" id="coin" name="coinSymbol">
+            <input type="text" class="form-control" id="coin" name="coinSymbolFrom">
+        </div>
+        <div class="form-group">
+            <select name="coinSymbolTo" class="form-control">
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+                <option value="XRM">XRM</option>
+                <option value="USDT">USDT</option>
+            </select>
         </div>
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>

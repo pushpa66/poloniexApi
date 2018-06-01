@@ -2,20 +2,21 @@
 require 'vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-if(!empty($_POST['coinSymbol'])){
-    $coin = $_POST['coinSymbol'];
-    $data = getData($coin);
-    writeToSpreadSheet($data, $coin);
+if(!empty($_POST['coinSymbolFrom'])){
+    $coinSymbolFrom = $_POST['coinSymbolFrom'];
+    $coinSymbolTo = $_POST['coinSymbolTo'];
+    $data = getData($coinSymbolFrom, $coinSymbolTo);
+    writeToSpreadSheet($data, $coinSymbolFrom, $coinSymbolTo);
 }
 
 /**
  * @throws \PhpOffice\PhpSpreadsheet\Exception
  * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
  */
-function writeToSpreadSheet($data , $coinSymbol){
+function writeToSpreadSheet($data , $coinSymbolFrom, $coinSymbolTo){
     $spreadsheet = new Spreadsheet();
     $sheet1 = new Worksheet($spreadsheet, 'Sells');
     $sheet2 = new Worksheet($spreadsheet, 'Buys');
@@ -30,58 +31,84 @@ function writeToSpreadSheet($data , $coinSymbol){
     $asks = $data["asks"];
     $bids = $data["bids"];
 
-    $cellWidth = 16;
+    $cellWidth = 20;
 
     $sheets['Asks']->getColumnDimension('A')->setWidth($cellWidth - 2);
-    $sheets['Asks']->getColumnDimension('B')->setWidth($cellWidth - 2);
-    $sheets['Asks']->getColumnDimension('C')->setWidth($cellWidth);
-    $sheets['Asks']->getColumnDimension('D')->setWidth($cellWidth + 2);
+    $sheets['Asks']->getColumnDimension('B')->setWidth($cellWidth);
+    $sheets['Asks']->getColumnDimension('C')->setWidth($cellWidth - 4);
+    $sheets['Asks']->getColumnDimension('D')->setWidth($cellWidth - 4);
 
     $sheets['Bids']->getColumnDimension('A')->setWidth($cellWidth - 2);
-    $sheets['Bids']->getColumnDimension('B')->setWidth($cellWidth - 2);
-    $sheets['Bids']->getColumnDimension('C')->setWidth($cellWidth);
-    $sheets['Bids']->getColumnDimension('D')->setWidth($cellWidth + 2);
+    $sheets['Bids']->getColumnDimension('B')->setWidth($cellWidth);
+    $sheets['Bids']->getColumnDimension('C')->setWidth($cellWidth - 4);
+    $sheets['Bids']->getColumnDimension('D')->setWidth($cellWidth - 4);
 
-    $sheets['Asks']->getCell("A1")->setValue($asks[0][0]);
-    $sheets['Asks']->getStyle("A1")->getAlignment()->setWrapText(true);
-    $sheets['Asks']->getCell("B1")->setValue($asks[0][1]);
-    $sheets['Asks']->getStyle("B1")->getAlignment()->setWrapText(true);
-    $sheets['Asks']->getCell("C1")->setValue($asks[0][0] * $asks[0][1]);
-    $sheets['Asks']->getStyle("C1")->getAlignment()->setWrapText(true);
-    $sheets['Asks']->getCell("D1")->setValue($asks[0][0] * $asks[0][1]);
-    $sheets['Asks']->getStyle("D1")->getAlignment()->setWrapText(true);
+    $sheets['Asks']->getStyle("A1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Asks']->getCell("A1")->setValue(setValue($asks[0][0]));
+    $sheets['Asks']->getStyle('A1')->getAlignment()->setWrapText(true);
 
-    $sheets['Bids']->getCell("A1")->setValue($bids[0][0]);
-    $sheets['Bids']->getStyle("A1")->getAlignment()->setWrapText(true);
-    $sheets['Bids']->getCell("B1")->setValue($bids[0][1]);
-    $sheets['Bids']->getStyle("B1")->getAlignment()->setWrapText(true);
-    $sheets['Bids']->getCell("C1")->setValue($bids[0][0] * $bids[0][1]);
-    $sheets['Bids']->getStyle("C1")->getAlignment()->setWrapText(true);
-    $sheets['Bids']->getCell("D1")->setValue($bids[0][0] * $bids[0][1]);
-    $sheets['Bids']->getStyle("D1")->getAlignment()->setWrapText(true);
+    $sheets['Asks']->getStyle("B1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Asks']->getCell("B1")->setValue(setValue($asks[0][1]));
+    $sheets['Asks']->getStyle('B1')->getAlignment()->setWrapText(true);
 
-    for($i = 2; $i < count($asks); $i++){
-        $sheets['Asks']->getCell("A".$i)->setValue($asks[$i - 1][0]);
+    $sheets['Asks']->getStyle("C1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Asks']->getCell("C1")->setValue(setValue($asks[0][0]) * setValue($asks[0][1]));
+    $sheets['Asks']->getStyle('C1')->getAlignment()->setWrapText(true);
+
+    $sheets['Asks']->getStyle("D1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Asks']->getCell("D1")->setValue(setValue($asks[0][0]) * setValue($asks[0][1]));
+    $sheets['Asks']->getStyle('D1')->getAlignment()->setWrapText(true);
+
+    $sheets['Bids']->getStyle("A1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Bids']->getCell("A1")->setValue(setValue($bids[0][0]));
+    $sheets['Bids']->getStyle('A1')->getAlignment()->setWrapText(true);
+
+    $sheets['Bids']->getStyle("B1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Bids']->getCell("B1")->setValue(setValue($bids[0][1]));
+    $sheets['Bids']->getStyle('B1')->getAlignment()->setWrapText(true);
+
+    $sheets['Bids']->getStyle("C1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Bids']->getCell("C1")->setValue(setValue($bids[0][0]) * setValue($bids[0][1]));
+    $sheets['Bids']->getStyle('C1')->getAlignment()->setWrapText(true);
+
+    $sheets['Bids']->getStyle("D1")->getNumberFormat()->setFormatCode('0.00000000');
+    $sheets['Bids']->getCell("D1")->setValue(setValue($bids[0][0]) * setValue($bids[0][1]));
+    $sheets['Bids']->getStyle('D1')->getAlignment()->setWrapText(true);
+
+    for($i = 2; $i <= count($asks); $i++){
+        $sheets['Asks']->getStyle("A".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $sheets['Asks']->getCell("A".$i)->setValue(setValue($asks[$i - 1][0]));
         $sheets['Asks']->getStyle("A".$i)->getAlignment()->setWrapText(true);
-        $sheets['Asks']->getCell("B".$i)->setValue($asks[$i - 1][1]);
+
+        $sheets['Asks']->getStyle("B".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $sheets['Asks']->getCell("B".$i)->setValue(setValue($asks[$i - 1][1]));
         $sheets['Asks']->getStyle("B".$i)->getAlignment()->setWrapText(true);
-        $sheets['Asks']->getCell("C".$i)->setValue($asks[$i - 1][0] * $asks[$i - 1][1]);
+
+        $sheets['Asks']->getStyle("C".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $sheets['Asks']->getCell("C".$i)->setValue(setValue($asks[$i - 1][0]) * setValue($asks[$i - 1][1]));
         $sheets['Asks']->getStyle("C".$i)->getAlignment()->setWrapText(true);
 
-        $value = $sheets['Asks']->getCell("D".($i - 1))->getValue() + $asks[$i - 1][0] * $asks[$i - 1][1];
+        $sheets['Asks']->getStyle("D".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $value = $sheets['Asks']->getCell("D".($i - 1))->getValue() + setValue($asks[$i - 1][0]) * setValue($asks[$i - 1][1]);
         $sheets['Asks']->getCell("D".$i)->setValue($value);
         $sheets['Asks']->getStyle("D".$i)->getAlignment()->setWrapText(true);
     }
 
-    for($i = 2; $i < count($bids); $i++){
-        $sheets['Bids']->getCell("A".$i)->setValue($bids[$i - 1][0]);
+    for($i = 2; $i <= count($bids); $i++){
+        $sheets['Bids']->getStyle("A".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $sheets['Bids']->getCell("A".$i)->setValue(setValue($bids[$i - 1][0]));
         $sheets['Bids']->getStyle("A".$i)->getAlignment()->setWrapText(true);
-        $sheets['Bids']->getCell("B".$i)->setValue($bids[$i - 1][1]);
+
+        $sheets['Bids']->getStyle("B".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $sheets['Bids']->getCell("B".$i)->setValue(setValue($bids[$i - 1][1]));
         $sheets['Bids']->getStyle("B".$i)->getAlignment()->setWrapText(true);
-        $sheets['Bids']->getCell("C".$i)->setValue($bids[$i - 1][0] * $bids[$i - 1][1]);
+
+        $sheets['Bids']->getStyle("C".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $sheets['Bids']->getCell("C".$i)->setValue(setValue($bids[$i - 1][0]) * setValue($bids[$i - 1][1]));
         $sheets['Bids']->getStyle("C".$i)->getAlignment()->setWrapText(true);
 
-        $value = $sheets['Bids']->getCell("D".($i - 1))->getValue() + $bids[$i - 1][0] * $bids[$i - 1][1];
+        $sheets['Bids']->getStyle("D".$i)->getNumberFormat()->setFormatCode('0.00000000');
+        $value = $sheets['Bids']->getCell("D".($i - 1))->getValue() + setValue($bids[$i - 1][0]) * setValue($bids[$i - 1][1]);
         $sheets['Bids']->getCell("D".$i)->setValue($value);
         $sheets['Bids']->getStyle("D".$i)->getAlignment()->setWrapText(true);
     }
@@ -91,12 +118,13 @@ function writeToSpreadSheet($data , $coinSymbol){
         $spreadsheet->getSheetByName('Worksheet')
     );
     $spreadsheet->removeSheetByIndex($sheetIndex);
-    $writer = new Xlsx($spreadsheet);
+    $writer = new Xls($spreadsheet);
 
     $t=time();
     $date = date("Y-m-d",$t);
 
-    $filename = "$coinSymbol $date";
+    $filename = "$coinSymbolTo-$coinSymbolFrom $date $t";
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment;filename="'. $filename .'.xls"'); /*-- $filename is  xsl filename ---*/
     header('Cache-Control: max-age=0');
 
@@ -104,14 +132,17 @@ function writeToSpreadSheet($data , $coinSymbol){
 
 }
 
-function getData($coinSymbol)
-{
+function setValue($value){
+    return number_format( (float) $value, 8, '.', '');
+}
+
+function getData($coinSymbolFrom, $coinSymbolTo){
 
     $results = array();
     $curl = curl_init();
 
     curl_setopt_array($curl, array(
-        CURLOPT_URL => "https://poloniex.com/public?command=returnOrderBook&currencyPair=BTC_$coinSymbol&depth=5000",
+        CURLOPT_URL => "https://poloniex.com/public?command=returnOrderBook&currencyPair=$coinSymbolTo".'_'."$coinSymbolFrom&depth=9000",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => "",
         CURLOPT_MAXREDIRS => 10,
